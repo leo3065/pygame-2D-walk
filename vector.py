@@ -42,19 +42,42 @@ class Vector2D(object):
             other = Vector2D(other)
         return Vector2D(self.x + other.x, self.y + other.y)
 
-    def __add__(self, other):
+    def __mul__(self, other):
         if isinstance(other, numbers.Number):
             other = Vector2D(other, other)
         if not isinstance(other, Vector2D):
             other = Vector2D(other)
         return Vector2D(self.x * other.x, self.y * other.y)
         
-    def __add__(self, other):
+    def __truediv__(self, other):
         if isinstance(other, numbers.Number):
             other = Vector2D(other, other)
         if not isinstance(other, Vector2D):
             other = Vector2D(other)
         return Vector2D(self.x / other.x, self.y / other.y)
+        
+    def __floordiv__(self, other):
+        if isinstance(other, numbers.Number):
+            other = Vector2D(other, other)
+        if not isinstance(other, Vector2D):
+            other = Vector2D(other)
+        return Vector2D(self.x // other.x, self.y // other.y)
+        
+    def __mod__(self, other):
+        if isinstance(other, numbers.Number):
+            other = Vector2D(other, other)
+        if not isinstance(other, Vector2D):
+            other = Vector2D(other)
+        return Vector2D(self.x % other.x, self.y % other.y)
+
+    def __eq__(self, other):
+        if not isinstance(other, Vector2D):
+            other = Vector2D(other)
+        return self.x == other.x and self.y == other.y
+    
+    def length(self):
+        x, y = self.x, self.y
+        return (x**2 + y**2)**.5
     
     def __str__(self):
         return f'{self.x}, {self.y}'
