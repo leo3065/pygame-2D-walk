@@ -1,7 +1,7 @@
-from typing import *
-
 from PIL import Image
 import numpy as np
+
+from typing import *
 
 
 class Tile_connectivity(object):
@@ -74,7 +74,9 @@ class Tile_connectivity(object):
     Down = Tile_connectivity(4)
     Left = Tile_connectivity(8)
 
-class Tile_sheet_loder(object):
+
+class Tile_sheet_loader(object):
     def __init__(self,
-                 tile_origins:Dict['str',Tuple[int,int]]):
-        pass
+                 tile_origins: Dict['str',Tuple[int,int]],
+                 tile_size: Tuple):
+        self.tile_origins = tile_origins
