@@ -9,16 +9,15 @@ import tile
 import img_util
 
 pygame.init()
-window_surface = pygame.display.set_mode((800, 600))
+window_surface = pygame.display.set_mode((1200, 675))
 
 pygame.display.set_caption('test draw')
 window_surface.fill((0, 0, 0))
 
-map_size = (30,20)
+map_size = (48,24)
 tile_size = 24
 tile_path = 'asset/tile/mt_steel_1-5.png'
 
-map_tile_id = map_gen.base_map_gen(map_size)
 tile_name = {
     0: 'ground',
     1: 'wall',
@@ -95,28 +94,38 @@ tile_loader = tile.Tile_sheet_loader(
     }
 )
 
-map_tile_id_padded = np.zeros((map_size[0]+2,map_size[1]+2))
-map_tile_id_padded[:,:] = 1
-map_tile_id_padded[1:-1,1:-1] = map_tile_id
+def map_draw(target_surface, map_tile_id, tile_loader):
+    map_size = tuple(map_tile_id.shape)
+    map_tile_id_padded = np.zeros((map_size[0]+2,map_size[1]+2))
+    map_tile_id_padded[:,:] = 1
+    map_tile_id_padded[1:-1,1:-1] = map_tile_id
 
-for y in range(map_size[1]):
-    for x in range(map_size[0]):
-        neighbors_array = (map_tile_id_padded[x:x+3,y:y+3] == map_tile_id[x,y]).T  # ij to xy
-        connectivity = tile.Tile_connectivity.from_neighbor_array(neighbors_array)
+    for y in range(map_size[1]):
+        for x in range(map_size[0]):
+            neighbors_array = (map_tile_id_padded[x:x+3,y:y+3] == map_tile_id[x,y]).T  # ij to xy
+            connectivity = tile.Tile_connectivity.from_neighbor_array(neighbors_array)
 
-        img = tile_loader.tile_sprite(tile_name[map_tile_id[x,y]], connectivity)
-        pygame_img = img_util.pil_image_to_surface(img)
-        window_surface.blit(pygame_img, (x*tile_size, y*tile_size))
-
-        if tile_name[map_tile_id[x,y]] == 'water':
-            img = tile_loader.tile_sprite('water_sparkle', connectivity)
+            img = tile_loader.tile_sprite(tile_name[map_tile_id[x,y]], connectivity)
             pygame_img = img_util.pil_image_to_surface(img)
             window_surface.blit(pygame_img, (x*tile_size, y*tile_size))
 
-pygame.display.flip()
+            if tile_name[map_tile_id[x,y]] == 'water':
+                img = tile_loader.tile_sprite('water_sparkle', connectivity)
+                pygame_img = img_util.pil_image_to_surface(img)
+                target_surface.blit(pygame_img, (x*tile_size, y*tile_size))
+
+    pygame.display.flip()
+
+
+map_tile_id = map_gen.base_map_gen(map_size)
+map_draw(window_surface, map_tile_id, tile_loader)
 
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                map_tile_id = map_gen.base_map_gen(map_size)
+                map_draw(window_surface, map_tile_id, tile_loader)

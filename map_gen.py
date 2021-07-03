@@ -90,7 +90,7 @@ def base_map_gen(map_size: Tuple[int, int], seed: Any = None) -> np.ndarray:
     smooth_kernal /= float(np.sum(smooth_kernal))
     heightmap = signal.convolve2d(
         heightmap, smooth_kernal, mode='same', boundary='fill', fillvalue=0)
-    heightmap += np.random.normal(0, .1, map_size)
+    heightmap += np.random.normal(0, .1, map_size)S
 
     heightmap -= np.quantile(heightmap, .2)
     max_height = np.max(heightmap)
