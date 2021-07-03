@@ -5,6 +5,8 @@ import pygame
 import numpy as np
 
 import map_gen
+import tile
+import img_util
 
 pygame.init()
 window_surface = pygame.display.set_mode((800, 600))
@@ -14,22 +16,104 @@ window_surface.fill((0, 0, 0))
 
 map_size = (30,20)
 tile_size = 24
+tile_path = 'asset/tile/mt_steel_1-5.png'
 
 map_tile_id = map_gen.base_map_gen(map_size)
-tile_colors = {
-    0: (0, 255, 0),
-    1: (255, 0, 0),
-    2: (0, 0, 255),
+tile_name = {
+    0: 'ground',
+    1: 'wall',
+    2: 'water',
     }
 
-base_rect = pygame.Rect(1, 1, 23, 23)
+tile_loader = tile.Tile_sheet_loader(
+    tile_path,
+    tile_origin=(84, 163), tile_size=(24, 24), tile_unit=(25, 25), 
+    transpert_key=(255, 0, 255),
+    type_offsets={
+        'ground': (9 ,0),
+        'wall': (0, 0),
+        'water': (18, 0),
+        'water_sparkle': (21,0),
+    },
+    connectiviy_offsets={
+        tile.Tile_connectivity.from_dpad([2,3,6]): (0,0),
+        tile.Tile_connectivity.from_dpad([1,2,3,4,6]): (1,0),
+        tile.Tile_connectivity.from_dpad([1,2,4]): (2,0),
+        tile.Tile_connectivity.from_dpad([2,3,6,8,9]): (0,1),
+        tile.Tile_connectivity.from_dpad([1,2,3,4,6,7,8,9]): (1,1),
+        tile.Tile_connectivity.from_dpad([1,2,4,7,8]): (2,1),
+        tile.Tile_connectivity.from_dpad([6,8,9]): (0,2),
+        tile.Tile_connectivity.from_dpad([4,6,7,8,9]): (1,2),
+        tile.Tile_connectivity.from_dpad([4,7,8]): (2,2),
+
+        tile.Tile_connectivity.from_dpad([2,6]): (0,3),
+        tile.Tile_connectivity.from_dpad([4,6]): (1,3),
+        tile.Tile_connectivity.from_dpad([2,4]): (2,3),
+        tile.Tile_connectivity.from_dpad([2,8]): (0,4),
+        tile.Tile_connectivity.from_dpad([]): (1,4),
+        tile.Tile_connectivity.from_dpad([6,8]): (0,5),
+        tile.Tile_connectivity.from_dpad([4,8]): (2,5),
+
+        tile.Tile_connectivity.from_dpad([2]): (1,6),
+        tile.Tile_connectivity.from_dpad([6]): (0,7),
+        tile.Tile_connectivity.from_dpad([2,4,6,8]): (1,7),
+        tile.Tile_connectivity.from_dpad([4]): (2,7),
+        tile.Tile_connectivity.from_dpad([8]): (1,8),
+
+        tile.Tile_connectivity.from_dpad([2,4,6]): (1,9),
+        tile.Tile_connectivity.from_dpad([2,6,8]): (0,10),
+        tile.Tile_connectivity.from_dpad([2,4,8]): (2,10),
+        tile.Tile_connectivity.from_dpad([4,6,8]): (1,11),
+
+        tile.Tile_connectivity.from_dpad([2,4,6,7,8,9]): (1,12),
+        tile.Tile_connectivity.from_dpad([1,2,4,6,7,8]): (0,13),
+        tile.Tile_connectivity.from_dpad([2,3,4,6,8,9]): (2,13),
+        tile.Tile_connectivity.from_dpad([1,2,3,4,6,8]): (1,14),
+
+        tile.Tile_connectivity.from_dpad([1,2,4,6,7,8,9]): (0,15),
+        tile.Tile_connectivity.from_dpad([2,3,4,6,7,8,9]): (1,15),
+        tile.Tile_connectivity.from_dpad([1,2,3,4,6,7,8]): (0,16),
+        tile.Tile_connectivity.from_dpad([1,2,3,4,6,8,9]): (1,16),
+
+        tile.Tile_connectivity.from_dpad([2,6,8,9]): (0,17),
+        tile.Tile_connectivity.from_dpad([2,4,7,8]): (1,17),
+        tile.Tile_connectivity.from_dpad([2,3,6,8]): (0,18),
+        tile.Tile_connectivity.from_dpad([1,2,4,8]): (1,18),
+
+        tile.Tile_connectivity.from_dpad([1,2,4,6]): (0,19),
+        tile.Tile_connectivity.from_dpad([2,3,4,6]): (1,19),
+        tile.Tile_connectivity.from_dpad([4,6,7,8]): (0,20),
+        tile.Tile_connectivity.from_dpad([4,6,8,9]): (1,20),
+
+        tile.Tile_connectivity.from_dpad([2,3,4,6,8]): (0,21),
+        tile.Tile_connectivity.from_dpad([1,2,4,6,8]): (1,21),
+        tile.Tile_connectivity.from_dpad([2,4,6,8,9]): (0,22),
+        tile.Tile_connectivity.from_dpad([2,4,6,7,8]): (1,22),
+
+        tile.Tile_connectivity.from_dpad([1,2,4,6,8,9]): (0,23),
+        tile.Tile_connectivity.from_dpad([2,3,4,6,7,8]): (1,23),
+    }
+)
+
+map_tile_id_padded = np.zeros((map_size[0]+2,map_size[1]+2))
+map_tile_id_padded[:,:] = 1
+map_tile_id_padded[1:-1,1:-1] = map_tile_id
+
 for y in range(map_size[1]):
     for x in range(map_size[0]):
-        draw_rect = base_rect.move(x*tile_size, y*tile_size)
-        color = pygame.Color(tile_colors[map_tile_id[x,y]])
-        pygame.draw.rect(window_surface, color, draw_rect)
+        neighbors_array = (map_tile_id_padded[x:x+3,y:y+3] == map_tile_id[x,y]).T  # ij to xy
+        connectivity = tile.Tile_connectivity.from_neighbor_array(neighbors_array)
 
-pygame.display.update()
+        img = tile_loader.tile_sprite(tile_name[map_tile_id[x,y]], connectivity)
+        pygame_img = img_util.pil_image_to_surface(img)
+        window_surface.blit(pygame_img, (x*tile_size, y*tile_size))
+
+        if tile_name[map_tile_id[x,y]] == 'water':
+            img = tile_loader.tile_sprite('water_sparkle', connectivity)
+            pygame_img = img_util.pil_image_to_surface(img)
+            window_surface.blit(pygame_img, (x*tile_size, y*tile_size))
+
+pygame.display.flip()
 
 while True:
     for event in pygame.event.get():
