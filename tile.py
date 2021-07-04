@@ -5,6 +5,8 @@ from PIL import Image
 import img_util
 import numpy as np
 
+from tile_type import Tile_type
+
 from typing import *
 
 
@@ -57,6 +59,12 @@ class Tile_connectivity(enum.IntFlag):
         for dirc in dpad:
             conn |= bitmasks[dirc]
         return Tile_connectivity(conn)
+    
+    @staticmethod
+    def all_connectivity():
+        """Returns a set with all possible connections.
+        """
+        return {Tile_connectivity(c) for c in range(256)}
 
     def handle_courners(self):
         """Returns the connectivity with the connection of corner dropped if not both cardinal directions are connected.
@@ -116,8 +124,12 @@ class Tile_sheet_loader(object):
             connectivity = Tile_connectivity.FULL
         if handles_corners:
             connectivity = connectivity.handle_courners()
+
+        tile_type = Tile_type(tile_type)
         offset = self.type_offsets[tile_type] + self.connectiviy_offsets[connectivity]
         upper_corner = self.tile_origin + offset
         lower_corner = upper_corner + self.tile_size
+        if self.sheet_image.getpixel((upper_corner.x+1, upper_corner.y+1)) == (0,128,128,255):
+            print('Missing tile style:', tile_type, connectivity)
         return self.sheet_image.crop((upper_corner.x, upper_corner.y,
                                       lower_corner.x, lower_corner.y))

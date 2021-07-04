@@ -130,12 +130,13 @@ def gen_neighbor_value_maps(tile_mask, border=1):
         [0x80, 0x01, 0x10],
         [0x08, 0x00, 0x02],
         [0x40, 0x04, 0x20],
-        ]).T  # xy -> ij
-    return signal.convolve2d(tile_mask, bitmasks, mode='same', boundary='fill', fillvalue=border)
+        ])
+    return signal.convolve2d(tile_mask, bitmasks, mode='same', boundary='fill', fillvalue=border).astype(int)
 
 
 def map_replace_tile_ids(tile_id: np.ndarray,
-                         replace_map: Dict[Tuple[int, Optional[tile.Tile_connectivity]], Dict[int, float]],
+                         replace_map: Dict[int,
+                            Tuple[Optional[Set[int]], Optional[Set[tile.Tile_connectivity]], Dict[int, float]]],
                          seed: Any = None):
     """Replaces id in a tile map array.
     
@@ -143,26 +144,34 @@ def map_replace_tile_ids(tile_id: np.ndarray,
         tile_id: The original tile map.
         replace_map:
             A replacement table in the following format:
-            {(from_id, connectivity): {to_id: weight, ...}, ...}
+            {(from_id, rule_id): ({connected_id}, {connectivity}, {to_id: weight, ...}), ...}
+            If {connected_id} is None, only onnected to the same tile type.
+            If {connectivity} is None, ignores connectivity.
+
     """
     if seed is not None:
         np.random.seed(seed)
     map_size = tile_id.shape
 
-    replace_masks = np.zeros(map_size, dtype=bool)
-    replace_value = np.zeros(map_size, dtype=int)
-    for tile_type, conn in replace_map:
-        targets = replace_map[(tile_type, conn)]
-        if conn is None:
-            mask = tile_id == tile_type
+    for tile_type, rule_id in replace_map:
+        connected_id, conn, targets = replace_map[(tile_type, rule_id)]
+        mask = tile_id == tile_type
+        if connected_id is None:
+            mask_connect = tile_id == tile_type
         else:
-            neighbor_map = gen_neighbor_value_maps(tile_id)
-            conn_np = np.array(int(c) for c in conn)
-            mask = (tile_id == tile_type) & np.isin(neighbor_map, conn_np)
+            connected_id_np = np.array([int(t) for t in connected_id])
+            mask_connect = np.isin(tile_id, connected_id_np)
+        
+        if conn is not None:
+            neighbor_map = gen_neighbor_value_maps(mask_connect)
+            conn_np = np.array([int(c) for c in conn])
+            mask &= np.isin(neighbor_map, conn_np)
 
-        target_gen = np.random.choice(targets.key(), p=targets.values(), 
-                                      size=map_size)
-        replace_masks |= mask
-        replace_value = mask*target_gen
+        target_sample = np.array([int(t) for t in targets.keys()])
+        target_weight = np.array(list(targets.values()), dtype=float)
+        target_weight /= np.sum(target_weight)
+        target_gen = np.random.choice(target_sample, p=target_weight, size=map_size)
+
+        tile_id = np.where(mask, target_gen, tile_id)
     
-    return np.where(replace_masks, replace_value, tile_id)
+    return tile_id
