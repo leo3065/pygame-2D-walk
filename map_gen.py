@@ -2,6 +2,8 @@ import numpy as np
 import scipy as sp
 from scipy import signal
 
+import tile
+
 from typing import *
 
 
@@ -90,7 +92,7 @@ def base_map_gen(map_size: Tuple[int, int], seed: Any = None) -> np.ndarray:
     smooth_kernal /= float(np.sum(smooth_kernal))
     heightmap = signal.convolve2d(
         heightmap, smooth_kernal, mode='same', boundary='fill', fillvalue=0)
-    heightmap += np.random.normal(0, .1, map_size)S
+    heightmap += np.random.normal(0, .1, map_size)
 
     heightmap -= np.quantile(heightmap, .2)
     max_height = np.max(heightmap)
@@ -121,3 +123,46 @@ def base_map_gen(map_size: Tuple[int, int], seed: Any = None) -> np.ndarray:
     land_type_id = np.einsum('ijk,k->ij', land_type, land_type_id_map)
 
     return land_type_id.astype(int)
+
+
+def gen_neighbor_value_maps(tile_mask, border=1):
+    bitmasks = np.array([
+        [0x80, 0x01, 0x10],
+        [0x08, 0x00, 0x02],
+        [0x40, 0x04, 0x20],
+        ]).T  # xy -> ij
+    return signal.convolve2d(tile_mask, bitmasks, mode='same', boundary='fill', fillvalue=border)
+
+
+def map_replace_tile_ids(tile_id: np.ndarray,
+                         replace_map: Dict[Tuple[int, Optional[tile.Tile_connectivity]], Dict[int, float]],
+                         seed: Any = None):
+    """Replaces id in a tile map array.
+    
+    Arg:
+        tile_id: The original tile map.
+        replace_map:
+            A replacement table in the following format:
+            {(from_id, connectivity): {to_id: weight, ...}, ...}
+    """
+    if seed is not None:
+        np.random.seed(seed)
+    map_size = tile_id.shape
+
+    replace_masks = np.zeros(map_size, dtype=bool)
+    replace_value = np.zeros(map_size, dtype=int)
+    for tile_type, conn in replace_map:
+        targets = replace_map[(tile_type, conn)]
+        if conn is None:
+            mask = tile_id == tile_type
+        else:
+            neighbor_map = gen_neighbor_value_maps(tile_id)
+            conn_np = np.array(int(c) for c in conn)
+            mask = (tile_id == tile_type) & np.isin(neighbor_map, conn_np)
+
+        target_gen = np.random.choice(targets.key(), p=targets.values(), 
+                                      size=map_size)
+        replace_masks |= mask
+        replace_value = mask*target_gen
+    
+    return np.where(replace_masks, replace_value, tile_id)

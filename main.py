@@ -1,5 +1,6 @@
 import sys
 import random
+import enum
 
 import pygame
 import numpy as np
@@ -18,21 +19,23 @@ map_size = (48,24)
 tile_size = 24
 tile_path = 'asset/tile/mt_steel_1-5.png'
 
-tile_name = {
-    0: 'ground',
-    1: 'wall',
-    2: 'water',
-    }
+class Tile_type(enum.IntEnum):
+    Ground = 0
+    Wall = 1
+    Water = 2
+    Ground_alt = 10
+    Water_sparkle = 20
 
 tile_loader = tile.Tile_sheet_loader(
     tile_path,
     tile_origin=(84, 163), tile_size=(24, 24), tile_unit=(25, 25), 
     transpert_key=(255, 0, 255),
     type_offsets={
-        'ground': (9 ,0),
-        'wall': (0, 0),
-        'water': (18, 0),
-        'water_sparkle': (21,0),
+        Tile_type.Ground: (9 ,0),
+        Tile_type.Ground_alt: (12 ,0),
+        Tile_type.Wall: (0, 0),
+        Tile_type.Water: (18, 0),
+        Tile_type.Water_sparkle: (21,0),
     },
     connectiviy_offsets={
         tile.Tile_connectivity.from_dpad([2,3,6]): (0,0),
@@ -104,21 +107,27 @@ def map_draw(target_surface, map_tile_id, tile_loader):
         for x in range(map_size[0]):
             neighbors_array = (map_tile_id_padded[x:x+3,y:y+3] == map_tile_id[x,y]).T  # ij to xy
             connectivity = tile.Tile_connectivity.from_neighbor_array(neighbors_array)
+            tile_name = map_tile_id[x,y]
 
-            img = tile_loader.tile_sprite(tile_name[map_tile_id[x,y]], connectivity)
+            img = tile_loader.tile_sprite(tile_name, connectivity)
             pygame_img = img_util.pil_image_to_surface(img)
-            window_surface.blit(pygame_img, (x*tile_size, y*tile_size))
+            target_surface.blit(pygame_img, (x*tile_size, y*tile_size))
 
-            if tile_name[map_tile_id[x,y]] == 'water':
-                img = tile_loader.tile_sprite('water_sparkle', connectivity)
+            if tile_name == Tile_type.Water:
+                img = tile_loader.tile_sprite(Tile_type.Water_sparkle, connectivity)
                 pygame_img = img_util.pil_image_to_surface(img)
                 target_surface.blit(pygame_img, (x*tile_size, y*tile_size))
 
-    pygame.display.flip()
-
+map_surface = pygame.Surface((map_size[0]*tile_size, map_size[1]*tile_size))
 
 map_tile_id = map_gen.base_map_gen(map_size)
-map_draw(window_surface, map_tile_id, tile_loader)
+map_tile_id = map_gen.map_replace_tile_ids(map_tile_id, 
+    {
+        
+    })
+map_draw(map_surface, map_tile_id, tile_loader)
+window_surface.blit(map_surface, (0,0))
+pygame.display.update()
 
 while True:
     for event in pygame.event.get():
@@ -128,4 +137,6 @@ while True:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 map_tile_id = map_gen.base_map_gen(map_size)
-                map_draw(window_surface, map_tile_id, tile_loader)
+                map_draw(map_surface, map_tile_id, tile_loader)
+                window_surface.blit(map_surface, (0,0))
+                pygame.display.update()
