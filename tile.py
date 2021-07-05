@@ -97,10 +97,14 @@ class Tile_sheet_loader(object):
                  connectiviy_offsets: Dict[Tile_connectivity, Tuple[int, int]],
                  use_tiles_for_type_offsets: bool=True,
                  use_tiles_for_connectiviy_offsets: bool=True,
-                 transpert_key: Optional[Tuple[int,int,int]]=None):
+                 transpert_key: Optional[Tuple[int,int,int]]=None,
+                 missing_key: Optional[Tuple[int,int,int]]=None):
         self.sheet_image = Image.open(path)
+        self.missing_key = missing_key
         if transpert_key is not None:
             self.sheet_image = img_util.pil_image_transperent_key(self.sheet_image, transpert_key)
+            if self.missing_key is not None:
+                self.missing_key = self.missing_key + (255,)
 
         self.tile_origin = Vector2(tile_origin)
         self.tile_size = Vector2(tile_size)
@@ -119,7 +123,8 @@ class Tile_sheet_loader(object):
             self.connectiviy_offsets = {conn: Vector2(offs) for conn, offs in connectiviy_offsets.items()}
     
     def tile_sprite(self,
-                    tile_type, connectivity: Tile_connectivity=None, handles_corners: bool=True):
+                    tile_type, connectivity: Tile_connectivity=None, fallback_tile=None, *, 
+                    handles_corners: bool=True):
         if connectivity is None:
             connectivity = Tile_connectivity.FULL
         if handles_corners:
@@ -129,7 +134,13 @@ class Tile_sheet_loader(object):
         offset = self.type_offsets[tile_type] + self.connectiviy_offsets[connectivity]
         upper_corner = self.tile_origin + offset
         lower_corner = upper_corner + self.tile_size
-        if self.sheet_image.getpixel((upper_corner.x+1, upper_corner.y+1)) == (0,128,128,255):
-            print('Missing tile style:', tile_type, connectivity)
+        if self.sheet_image.getpixel((upper_corner.x+1, upper_corner.y+1)) == self.missing_key:
+            if fallback_tile is None:
+                print('Missing tile style:', tile_type, connectivity)
+            else:
+                fallback_tile = Tile_type(fallback_tile)
+                offset = self.type_offsets[fallback_tile] + self.connectiviy_offsets[connectivity]
+                upper_corner = self.tile_origin + offset
+                lower_corner = upper_corner + self.tile_size
         return self.sheet_image.crop((upper_corner.x, upper_corner.y,
                                       lower_corner.x, lower_corner.y))

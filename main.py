@@ -24,6 +24,7 @@ tile_loader = tile.Tile_sheet_loader(
     tile_path,
     tile_origin=(84, 163), tile_size=(24, 24), tile_unit=(25, 25), 
     transpert_key=(255, 0, 255),
+    missing_key=(0, 128, 128),
     type_offsets={
         Tile_type.GROUND: (9 ,0),
         Tile_type.GROUND_ALT: (12 ,0),
@@ -94,17 +95,23 @@ tile_loader = tile.Tile_sheet_loader(
 )
 
 def map_draw(target_surface, map_tile_id, tile_loader,
-             connected_tile_type=None):
+             connected_tile_type=None, fallback_table=None):
     map_size = tuple(map_tile_id.shape)
     map_tile_id_padded = np.zeros((map_size[0]+2,map_size[1]+2)).astype(int)
     map_tile_id_padded[:,:] = 1
     map_tile_id_padded[1:-1,1:-1] = map_tile_id
     if connected_tile_type is None:
         connected_tile_type = {}
+    if fallback_table is None:
+        fallback_table = {}
 
     for y in range(map_size[1]):
         for x in range(map_size[0]):
             current_tile = map_tile_id[x,y]
+            if current_tile in fallback_table:
+                fallback_tile = fallback_table[current_tile]
+            else:
+                fallback_tile = None
             if map_tile_id[x,y] not in connected_tile_type:
                 neighbors_array = (map_tile_id_padded[x:x+3,y:y+3] == map_tile_id[x,y]).T  # ij to xy
             else:
@@ -112,7 +119,7 @@ def map_draw(target_surface, map_tile_id, tile_loader,
                                           np.array([int(t) for t in connected_tile_type[current_tile]]))
             connectivity = tile.Tile_connectivity.from_neighbor_array(neighbors_array)
 
-            img = tile_loader.tile_sprite(current_tile, connectivity)
+            img = tile_loader.tile_sprite(current_tile, connectivity, fallback_tile=fallback_tile)
             pygame_img = img_util.pil_image_to_surface(img)
             target_surface.blit(pygame_img, (x*tile_size, y*tile_size))
 
@@ -123,42 +130,51 @@ def map_draw(target_surface, map_tile_id, tile_loader,
 
 map_surface = pygame.Surface((map_size[0]*tile_size, map_size[1]*tile_size))
 
-tile_replace_table = {
-    (Tile_type.GROUND, 0): 
-        ({Tile_type.GROUND, Tile_type.WATER, Tile_type.GROUND_ALT},
-         {c for c in tile.Tile_connectivity.all_connectivity() if int(c) not in [0xFF, 0x9F, 0x3F, 0x8F, 0xAF]},
-         {
-             Tile_type.GROUND: 2,
-             Tile_type.GROUND_ALT: 1,
+tile_replace_table = [
+    (
+        Tile_type.GROUND,  
+        {Tile_type.GROUND, Tile_type.WATER, Tile_type.GROUND_ALT},
+        {c for c in tile.Tile_connectivity.all_connectivity() if int(c) not in [0xFF, 0x9F, 0x3F, 0x8F, 0xAF]},
+        {
+            Tile_type.GROUND: 2,
+            Tile_type.GROUND_ALT: 1,
         }),
-    (Tile_type.GROUND, 1): 
-        ({Tile_type.GROUND, Tile_type.WATER, Tile_type.GROUND_ALT},
-         {tile.Tile_connectivity.FULL},
-         {
-             Tile_type.GROUND: 4,
-             Tile_type.GROUND_ALT: 1,
+    (
+        Tile_type.GROUND,  
+        {Tile_type.GROUND, Tile_type.WATER, Tile_type.GROUND_ALT},
+        {tile.Tile_connectivity.FULL},
+        {
+            Tile_type.GROUND: 4,
+            Tile_type.GROUND_ALT: 1,
         }),
-    (Tile_type.WALL, 0): 
-        (None,
-         {tile.Tile_connectivity.FULL},
-         {
-             Tile_type.WALL: 4,
-             Tile_type.WALL_ALT: 1,
-             Tile_type.WALL_ALT_2: 1,
+    (
+        Tile_type.WALL,  
+        None,
+        {tile.Tile_connectivity.FULL},
+        {
+            Tile_type.WALL: 4,
+            Tile_type.WALL_ALT: 1,
+            Tile_type.WALL_ALT_2: 1,
         }),
-}
+]
 tile_connect_table = {
     Tile_type.GROUND_ALT: {Tile_type.GROUND, Tile_type.GROUND_ALT, Tile_type.WATER},
     Tile_type.WALL: {Tile_type.WALL, Tile_type.WALL_ALT, Tile_type.WALL_ALT_2},
     Tile_type.WALL_ALT: {Tile_type.WALL, Tile_type.WALL_ALT, Tile_type.WALL_ALT_2},
     Tile_type.WALL_ALT_2: {Tile_type.WALL, Tile_type.WALL_ALT, Tile_type.WALL_ALT_2},
 }
+tile_fallback_table = {
+    Tile_type.GROUND_ALT: Tile_type.GROUND,
+}
 
-map_tile_id = map_gen.base_map_gen(map_size)
-map_tile_id = map_gen.map_replace_tile_ids(map_tile_id, tile_replace_table)
+def map_init():
+    map_tile_id = map_gen.base_map_gen(map_size)
+    map_tile_id = map_gen.map_replace_tile_ids(map_tile_id, tile_replace_table)
 
-map_draw(map_surface, map_tile_id, tile_loader, tile_connect_table)
-window_surface.blit(map_surface, (0,0))
+    map_draw(map_surface, map_tile_id, tile_loader, tile_connect_table, tile_fallback_table)
+    window_surface.blit(map_surface, (0,0))
+
+map_init()
 pygame.display.update()
 
 while True:
@@ -168,9 +184,5 @@ while True:
             sys.exit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
-                map_tile_id = map_gen.base_map_gen(map_size)
-                map_tile_id = map_gen.map_replace_tile_ids(map_tile_id, tile_replace_table)
-
-                map_draw(map_surface, map_tile_id, tile_loader, tile_connect_table)
-                window_surface.blit(map_surface, (0,0))
+                map_init()
                 pygame.display.update()

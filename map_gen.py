@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sp
 from scipy import signal
 
+from tile_type import Tile_type
 import tile
 
 from typing import *
@@ -135,8 +136,8 @@ def gen_neighbor_value_maps(tile_mask, border=1):
 
 
 def map_replace_tile_ids(tile_id: np.ndarray,
-                         replace_map: Dict[int,
-                            Tuple[Optional[Set[int]], Optional[Set[tile.Tile_connectivity]], Dict[int, float]]],
+                         replace_map: List[
+                            Tuple[int, Optional[Set[int]], Optional[Set[tile.Tile_connectivity]], Dict[int, float]]],
                          seed: Any = None):
     """Replaces id in a tile map array.
     
@@ -144,7 +145,7 @@ def map_replace_tile_ids(tile_id: np.ndarray,
         tile_id: The original tile map.
         replace_map:
             A replacement table in the following format:
-            {(from_id, rule_id): ({connected_id}, {connectivity}, {to_id: weight, ...}), ...}
+            [(from_id, {connected_id}, {connectivity}, {to_id: weight, ...}), ...]
             If {connected_id} is None, only onnected to the same tile type.
             If {connectivity} is None, ignores connectivity.
 
@@ -153,8 +154,7 @@ def map_replace_tile_ids(tile_id: np.ndarray,
         np.random.seed(seed)
     map_size = tile_id.shape
 
-    for tile_type, rule_id in replace_map:
-        connected_id, conn, targets = replace_map[(tile_type, rule_id)]
+    for tile_type, connected_id, conn, targets  in replace_map:
         mask = tile_id == tile_type
         if connected_id is None:
             mask_connect = tile_id == tile_type
