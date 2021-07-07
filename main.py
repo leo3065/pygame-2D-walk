@@ -184,7 +184,7 @@ while not finished:
             finished = True
             break
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.RETURN:
+            if event.key == pygame.K_RETURN:
                 map_tile_id = map_gen.base_map_gen_hill(map_size)
                 game_map = Game_map(map_tile_id, tile_name_table, tile_loader)
                 
