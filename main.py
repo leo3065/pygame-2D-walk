@@ -3,21 +3,17 @@ import random
 import enum
 
 import pygame
+from  pygame.math import Vector2
 import numpy as np
 
+from game_map import Game_map
 import map_gen
 import tile
+from character import Facing, Character
+from sprite import Sprite_sheet_loader
 import img_util
-from tile_type import Tile_type
-
-pygame.init()
-window_surface = pygame.display.set_mode((1200, 675))
-
-pygame.display.set_caption('test draw')
-window_surface.fill((0, 0, 0))
 
 map_size = (48,24)
-tile_size = 24
 tile_path = 'asset/tile/mt_steel_1-5.png'
 
 tile_loader = tile.Tile_sheet_loader(
@@ -26,13 +22,13 @@ tile_loader = tile.Tile_sheet_loader(
     transpert_key=(255, 0, 255),
     missing_key=(0, 128, 128),
     type_offsets={
-        Tile_type.GROUND: (9 ,0),
-        Tile_type.GROUND_ALT: (12 ,0),
-        Tile_type.WALL: (0, 0),
-        Tile_type.WALL_ALT: (3, 0),
-        Tile_type.WALL_ALT_2: (6, 0),
-        Tile_type.WATER: (18, 0),
-        Tile_type.WATER_SPARKLE: (21,0),
+        ('ground', 0): (9 ,0),
+        ('ground', 1): (12 ,0),
+        ('wall',0): (0, 0),
+        ('wall',1): (3, 0),
+        ('wall',2): (6, 0),
+        ('water',0): (18, 0),
+        ('water_sparkle',0): (21,0),
     },
     connectiviy_offsets={
         tile.Tile_connectivity.from_dpad([2,3,6]): (0,0),
@@ -93,96 +89,97 @@ tile_loader = tile.Tile_sheet_loader(
         tile.Tile_connectivity.from_dpad([2,3,4,6,7,8]): (1,23),
     }
 )
-
-def map_draw(target_surface, map_tile_id, tile_loader,
-             connected_tile_type=None, fallback_table=None):
-    map_size = tuple(map_tile_id.shape)
-    map_tile_id_padded = np.zeros((map_size[0]+2,map_size[1]+2)).astype(int)
-    map_tile_id_padded[:,:] = 1
-    map_tile_id_padded[1:-1,1:-1] = map_tile_id
-    if connected_tile_type is None:
-        connected_tile_type = {}
-    if fallback_table is None:
-        fallback_table = {}
-
-    for y in range(map_size[1]):
-        for x in range(map_size[0]):
-            current_tile = map_tile_id[x,y]
-            if current_tile in fallback_table:
-                fallback_tile = fallback_table[current_tile]
-            else:
-                fallback_tile = None
-            if map_tile_id[x,y] not in connected_tile_type:
-                neighbors_array = (map_tile_id_padded[x:x+3,y:y+3] == map_tile_id[x,y]).T  # ij to xy
-            else:
-                neighbors_array = np.isin(map_tile_id_padded[x:x+3,y:y+3].T,  # ij to xy
-                                          np.array([int(t) for t in connected_tile_type[current_tile]]))
-            connectivity = tile.Tile_connectivity.from_neighbor_array(neighbors_array)
-
-            img = tile_loader.tile_sprite(current_tile, connectivity, fallback_tile=fallback_tile)
-            pygame_img = img_util.pil_image_to_surface(img)
-            target_surface.blit(pygame_img, (x*tile_size, y*tile_size))
-
-            if current_tile == Tile_type.WATER:
-                img = tile_loader.tile_sprite(Tile_type.WATER_SPARKLE, connectivity)
-                pygame_img = img_util.pil_image_to_surface(img)
-                target_surface.blit(pygame_img, (x*tile_size, y*tile_size))
-
-map_surface = pygame.Surface((map_size[0]*tile_size, map_size[1]*tile_size))
-
-tile_replace_table = [
-    (
-        Tile_type.GROUND,  
-        {Tile_type.GROUND, Tile_type.WATER, Tile_type.GROUND_ALT},
-        {c for c in tile.Tile_connectivity.all_connectivity() if int(c) not in [0xFF, 0x9F, 0x3F, 0x8F, 0xAF]},
-        {
-            Tile_type.GROUND: 2,
-            Tile_type.GROUND_ALT: 1,
-        }),
-    (
-        Tile_type.GROUND,  
-        {Tile_type.GROUND, Tile_type.WATER, Tile_type.GROUND_ALT},
-        {tile.Tile_connectivity.FULL},
-        {
-            Tile_type.GROUND: 4,
-            Tile_type.GROUND_ALT: 1,
-        }),
-    (
-        Tile_type.WALL,  
-        None,
-        {tile.Tile_connectivity.FULL},
-        {
-            Tile_type.WALL: 4,
-            Tile_type.WALL_ALT: 1,
-            Tile_type.WALL_ALT_2: 1,
-        }),
-]
-tile_connect_table = {
-    Tile_type.GROUND_ALT: {Tile_type.GROUND, Tile_type.GROUND_ALT, Tile_type.WATER},
-    Tile_type.WALL: {Tile_type.WALL, Tile_type.WALL_ALT, Tile_type.WALL_ALT_2},
-    Tile_type.WALL_ALT: {Tile_type.WALL, Tile_type.WALL_ALT, Tile_type.WALL_ALT_2},
-    Tile_type.WALL_ALT_2: {Tile_type.WALL, Tile_type.WALL_ALT, Tile_type.WALL_ALT_2},
-}
-tile_fallback_table = {
-    Tile_type.GROUND_ALT: Tile_type.GROUND,
+tile_name_table = {
+    0: 'ground',
+    1: 'wall',
+    2: 'water',
 }
 
-def map_init():
-    map_tile_id = map_gen.base_map_gen(map_size)
-    map_tile_id = map_gen.map_replace_tile_ids(map_tile_id, tile_replace_table)
+map_tile_id = map_gen.base_map_gen(map_size)
+game_map = Game_map(map_tile_id, tile_name_table, tile_loader)
 
-    map_draw(map_surface, map_tile_id, tile_loader, tile_connect_table, tile_fallback_table)
-    window_surface.blit(map_surface, (0,0))
 
-map_init()
-pygame.display.update()
+sprite_path = 'asset/character/skarmory.png'
+player_sprite_sheet_loader = Sprite_sheet_loader(
+    path=sprite_path,
+    sprite_origin=(41,1), sprite_size=(41,35), sprite_unit=(42,36),
+    type_offsets={
+        'move': (0,3),
+    },
+    facing_offsets={
+        Facing.DOWN: (0,0),
+        Facing.DOWN_LEFT: (1,0),
+        Facing.LEFT: (2,0),
+        Facing.UP_LEFT: (3,0),
+        Facing.UP: (4,0),
+    },
+    transpert_key=(0,128,128),
+    )
 
+player = Character(
+    rect_collision_base=pygame.Rect((-10,-5),(20,10)),
+    sprite_loader=player_sprite_sheet_loader,
+    sprite_origin=(20,30),
+    )
+player.position = Vector2(0)
 while True:
+    spawn_pos = (random.randint(0, map_size[0]-1), random.randint(0, map_size[1]-1))
+    new_pos, new_rect = player.try_move(game_map.tile_coord_to_pixel_coord(spawn_pos))
+    if all(game_map.get_tile_name_at(c, use_pixels=True) != 'wall'
+           for c in [new_rect.topleft, new_rect.topright, new_rect.bottomleft, new_rect.bottomright]):
+        break
+spawn_pos = game_map.tile_coord_to_pixel_coord(spawn_pos, tile_offset=(0.5,0.5))
+player.position = Vector2(spawn_pos)
+
+map_size_pixel = game_map.tile_coord_to_pixel_coord(map_size)
+display_area_size = (360,270)
+scale_ratio = 2
+display_area_rect = pygame.Rect((0,0), display_area_size)
+
+actual_window_size = (display_area_size[0]*scale_ratio, display_area_size[1]*scale_ratio)
+pygame.init()
+window_surface = pygame.display.set_mode(actual_window_size)
+
+pygame.display.set_caption('test charater')
+window_surface.fill((0, 0, 0))
+
+clock = pygame.time.Clock()
+finished = False
+buffer_suface = pygame.Surface(game_map.surface.get_size())
+display_area_suface = pygame.Surface(display_area_rect.size)
+
+while not finished:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
-                map_init()
-                pygame.display.update()
+            finished = True
+            break
+
+    key_is_pressed = pygame.key.get_pressed()
+    player.speed.x = (key_is_pressed[pygame.K_RIGHT]-key_is_pressed[pygame.K_LEFT])
+    player.speed.y = (key_is_pressed[pygame.K_DOWN]-key_is_pressed[pygame.K_UP])
+    if player.speed.length() > 0:
+        player.speed.scale_to_length(2)
+        player.facing = Facing.from_vector(player.speed)
+
+    new_pos, new_rect = player.try_move()
+    if all(game_map.get_tile_name_at(c, use_pixels=True) != 'wall'
+           for c in [new_rect.topleft, new_rect.topright, new_rect.bottomleft, new_rect.bottomright]):
+        player.move()
+    
+    display_area_rect.center = player.position
+    display_area_rect.left = max(display_area_rect.left, 0)
+    display_area_rect.top = max(display_area_rect.top, 0)
+    display_area_rect.right = min(display_area_rect.right, map_size_pixel[0])
+    display_area_rect.bottom = min(display_area_rect.bottom, map_size_pixel[1])
+
+
+    buffer_suface.blit(game_map.surface, (0,0))
+    player.draw(buffer_suface)
+    
+    display_area_suface.blit(buffer_suface, (0,0), display_area_rect)
+    pygame.transform.scale(display_area_suface, actual_window_size, window_surface)
+    pygame.display.update()
+    clock.tick(60)
+
+pygame.quit()
+sys.exit()

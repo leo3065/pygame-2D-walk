@@ -2,7 +2,6 @@ import numpy as np
 import scipy as sp
 from scipy import signal
 
-from tile_type import Tile_type
 import tile
 
 from typing import *
@@ -124,54 +123,3 @@ def base_map_gen(map_size: Tuple[int, int], seed: Any = None) -> np.ndarray:
     land_type_id = np.einsum('ijk,k->ij', land_type, land_type_id_map)
 
     return land_type_id.astype(int)
-
-
-def gen_neighbor_value_maps(tile_mask, border=1):
-    bitmasks = np.array([
-        [0x80, 0x01, 0x10],
-        [0x08, 0x00, 0x02],
-        [0x40, 0x04, 0x20],
-        ])
-    return signal.convolve2d(tile_mask, bitmasks, mode='same', boundary='fill', fillvalue=border).astype(int)
-
-
-def map_replace_tile_ids(tile_id: np.ndarray,
-                         replace_map: List[
-                            Tuple[int, Optional[Set[int]], Optional[Set[tile.Tile_connectivity]], Dict[int, float]]],
-                         seed: Any = None):
-    """Replaces id in a tile map array.
-    
-    Arg:
-        tile_id: The original tile map.
-        replace_map:
-            A replacement table in the following format:
-            [(from_id, {connected_id}, {connectivity}, {to_id: weight, ...}), ...]
-            If {connected_id} is None, only onnected to the same tile type.
-            If {connectivity} is None, ignores connectivity.
-
-    """
-    if seed is not None:
-        np.random.seed(seed)
-    map_size = tile_id.shape
-
-    for tile_type, connected_id, conn, targets  in replace_map:
-        mask = tile_id == tile_type
-        if connected_id is None:
-            mask_connect = tile_id == tile_type
-        else:
-            connected_id_np = np.array([int(t) for t in connected_id])
-            mask_connect = np.isin(tile_id, connected_id_np)
-        
-        if conn is not None:
-            neighbor_map = gen_neighbor_value_maps(mask_connect)
-            conn_np = np.array([int(c) for c in conn])
-            mask &= np.isin(neighbor_map, conn_np)
-
-        target_sample = np.array([int(t) for t in targets.keys()])
-        target_weight = np.array(list(targets.values()), dtype=float)
-        target_weight /= np.sum(target_weight)
-        target_gen = np.random.choice(target_sample, p=target_weight, size=map_size)
-
-        tile_id = np.where(mask, target_gen, tile_id)
-    
-    return tile_id
