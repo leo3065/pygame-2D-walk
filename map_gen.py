@@ -38,8 +38,8 @@ def hill(xx: np.ndarray, yy:np.ndarray, /,
     return 1/(np.abs(dist/scale)**h_order+1)
 
 
-def base_map_gen(map_size: Tuple[int, int], seed: Any = None) -> np.ndarray:
-    """Generate a numpy array containing tile ID.
+def base_map_gen_hill(map_size: Tuple[int, int], seed: Any = None) -> np.ndarray:
+    """Generate a numpy array for the base map containing tile ID.
 
     Args:
         map_size: Size of the map in (x, y) format.
