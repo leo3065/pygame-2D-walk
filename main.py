@@ -113,12 +113,14 @@ tile_loader = tile.Tile_sheet_loader(
 
         tile.Tile_connectivity.from_dpad([1,2,4,6,8,9]): (0,23),
         tile.Tile_connectivity.from_dpad([2,3,4,6,7,8]): (1,23),
-    }
+    },
+    animated_tile_types=['water', 'water_sparkle']
 )
 tile_name_table = {
     0: 'ground',
     1: 'wall',
     2: 'water',
+    100: 'water_sparkle',
 }
 
 map_tile_id = map_gen.base_map_gen_hill(map_size)
@@ -211,7 +213,9 @@ while not finished:
     if all(game_map.get_tile_name_at(c, use_pixels=True) != 'wall'
            for c in [new_rect.topleft, new_rect.topright, new_rect.bottomleft, new_rect.bottomright]):
         player.move()
-    player.animate()
+
+    current_tile_type = game_map.get_tile_name_at(player.position, use_pixels=True)
+    player.animate(current_tile_type=current_tile_type)
     
 
     display_area_rect.center = player.position

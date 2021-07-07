@@ -93,6 +93,7 @@ class Tile_sheet_loader(object):
                  tile_unit: Tuple[int,int],
                  type_offsets: Dict[Tuple[str, int],Tuple[int,int]],
                  connectiviy_offsets: Dict[Tile_connectivity, Tuple[int, int]],
+                 animated_tile_types: List[str]=None,
                  use_pixels_for_type_offsets: bool=False,
                  use_pixels_for_connectiviy_offsets: bool=False,
                  transpert_key: Optional[Tuple[int,int,int]]=None,
@@ -119,6 +120,10 @@ class Tile_sheet_loader(object):
                                         for conn, offs in connectiviy_offsets.items()}
         else:
             self.connectiviy_offsets = {conn: Vector2(offs) for conn, offs in connectiviy_offsets.items()}
+        
+        if animated_tile_types is None:
+            animated_tile_types = []
+        self.animated_tile_types = animated_tile_types
     
     def get_tile_img(self,
                      tile_name, connectivity: Tile_connectivity=None, tile_style=0, *, 

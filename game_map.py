@@ -17,6 +17,19 @@ class Game_map(object):
 
         self.tile_name_table = tile_name_table
         self.tile_id_table = {name: id for id, name in tile_name_table.items()}
+
+        animated_tile_type_ids = [self.tile_id_table[name]
+                                  for name in self.tile_loader.animated_tile_types]
+        animated_tiles = []
+        map_size = self.size
+        map_tile_id_np = self.tile_id_np
+        for y in range(map_size[1]):
+            for x in range(map_size[0]):
+                current_tile = map_tile_id_np[x,y]
+                if current_tile in animated_tile_type_ids:
+                    animated_tiles.append((x,y))
+        self.animated_tiles = animated_tiles
+        
         self.update_suface()
 
     def update_suface(self):
