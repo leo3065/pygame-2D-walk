@@ -18,9 +18,11 @@ class Character(object):
         self.rect_collision_base = rect_collision_base
         self.sprite_loader = sprite_loader
         self.sprite_origin = Vector2(sprite_origin)
+
         self.position_offset = Vector3(0,0,0)
         self.state = 'idle'
         self.sprite_type = 'stand'
+
         self.frame_until_next_event = 0
         self.animation_queue = []
         
@@ -41,9 +43,9 @@ class Character(object):
         if self.state == 'idle' and self.speed.length() > 0:
             self.state = 'flying'
             self.animation_queue = [
-                [2, {'set_sprite': 'pmove_0', 'set_position_offset': (0,0,0)}],
-                [2, {'set_sprite': 'pmove_1', 'set_position_offset': (0,0,0)}],
-                [0, {'set_sprite': 'flying', 'set_position_offset': (0,0,0)}],
+                [3, {'set_sprite': 'pmove_0', 'set_position_offset': (0,0,0)}],
+                [3, {'set_sprite': 'pmove_1', 'set_position_offset': (0,0,0)}],
+                [3, {'set_sprite': 'flying', 'set_position_offset': (0,0,0)}],
             ]
             self.frame_until_next_event = 0
         elif self.state == 'flying' and self.speed.length() == 0:
@@ -51,7 +53,7 @@ class Character(object):
             self.animation_queue = [
                 [3, {'set_sprite': 'pmove_1', 'set_position_offset': (0,0,0)}],
                 [3, {'set_sprite': 'pmove_0', 'set_position_offset': (0,0,0)}],
-                [0, {'set_sprite': 'stand', 'set_position_offset': (0,0,0)}],
+                [3, {'set_sprite': 'stand', 'set_position_offset': (0,0,0)}],
             ]
             self.frame_until_next_event = 0
 
@@ -61,7 +63,9 @@ class Character(object):
                 animation_queue.extend(
                     [
                         [60, {'set_sprite': 'stand', 'set_position_offset': (0,0,0)}],
-                        [5, {'set_sprite': 'pmove_0'}],
+                        [2, {'set_sprite': 'pmove_0', 'set_position_offset': (0,0,2)}],
+                        [3, {'set_sprite': 'pmove_0', 'set_position_offset': (0,0,3)}],
+                        [2, {'set_sprite': 'pmove_0', 'set_position_offset': (0,0,2)}],
                     ])
             elif self.state == 'flying':
                 animation_queue.extend(
