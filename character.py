@@ -43,7 +43,7 @@ class Character(object):
             self.animation_queue = [
                 [2, {'set_sprite': 'pmove_0', 'set_position_offset': (0,0,0)}],
                 [2, {'set_sprite': 'pmove_1', 'set_position_offset': (0,0,0)}],
-                [2, {'set_sprite': 'flying', 'set_position_offset': (0,0,0)}],
+                [0, {'set_sprite': 'flying', 'set_position_offset': (0,0,0)}],
             ]
             self.frame_until_next_event = 0
         elif self.state == 'flying' and self.speed.length() == 0:
@@ -51,7 +51,7 @@ class Character(object):
             self.animation_queue = [
                 [3, {'set_sprite': 'pmove_1', 'set_position_offset': (0,0,0)}],
                 [3, {'set_sprite': 'pmove_0', 'set_position_offset': (0,0,0)}],
-                [3, {'set_sprite': 'stand', 'set_position_offset': (0,0,0)}],
+                [0, {'set_sprite': 'stand', 'set_position_offset': (0,0,0)}],
             ]
             self.frame_until_next_event = 0
 
@@ -80,8 +80,7 @@ class Character(object):
             if 'set_sprite' in events:
                 self.sprite_type = events['set_sprite']
             self.frame_until_next_event = frame_duration
-        else:
-            self.frame_until_next_event -= 1
+        self.frame_until_next_event -= 1
 
     def draw(self, surface: pygame.Surface):
         shadow_surface = pygame.Surface(self.rect_collision_base.size, pygame.SRCALPHA)
