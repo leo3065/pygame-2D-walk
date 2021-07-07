@@ -2,6 +2,32 @@ import sys
 import random
 import enum
 
+missing_module = []
+try:
+    import pygame
+except ModuleNotFoundError:
+    missing_module.append('pygame')
+try:
+    import numpy
+except ModuleNotFoundError:
+    missing_module.append('numpy')
+try:
+    import scipy
+except ModuleNotFoundError:
+    missing_module.append('scipy')
+try:
+    import PIL
+except ModuleNotFoundError:
+    missing_module.append('Pillow')
+if missing_module:
+    print('The following module is required')
+    print(f'- {", ".join(missing_module)}')
+    print('Please run the following in command prompt to install:')
+    print(f'pip install -U {" ".join(missing_module)}')
+    input('Press Enter to continue...')
+    sys.exit()
+
+
 import pygame
 from  pygame.math import Vector2
 import numpy as np
@@ -95,7 +121,7 @@ tile_name_table = {
     2: 'water',
 }
 
-map_tile_id = map_gen.base_map_gen(map_size)
+map_tile_id = map_gen.base_map_gen_hill(map_size)
 game_map = Game_map(map_tile_id, tile_name_table, tile_loader)
 
 
@@ -157,6 +183,21 @@ while not finished:
         if event.type == pygame.QUIT:
             finished = True
             break
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.RETURN:
+                map_tile_id = map_gen.base_map_gen_hill(map_size)
+                game_map = Game_map(map_tile_id, tile_name_table, tile_loader)
+                
+                player.position = Vector2(0)
+                while True:
+                    spawn_pos = (random.randint(0, map_size[0]-1), random.randint(0, map_size[1]-1))
+                    new_pos, new_rect = player.try_move(game_map.tile_coord_to_pixel_coord(spawn_pos))
+                    if all(game_map.get_tile_name_at(c, use_pixels=True) != 'wall'
+                        for c in [new_rect.topleft, new_rect.topright, new_rect.bottomleft, new_rect.bottomright]):
+                        break
+                spawn_pos = game_map.tile_coord_to_pixel_coord(spawn_pos, tile_offset=(0.5,0.5))
+                player.position = Vector2(spawn_pos)
+
 
     key_is_pressed = pygame.key.get_pressed()
     player.speed.x = (key_is_pressed[pygame.K_RIGHT]-key_is_pressed[pygame.K_LEFT])
@@ -165,13 +206,14 @@ while not finished:
     if player.speed.length() > 0:
         player.speed.scale_to_length(2)
         player.facing = Facing.from_vector(player.speed)
+    
     new_pos, new_rect = player.try_move()
-
     if all(game_map.get_tile_name_at(c, use_pixels=True) != 'wall'
            for c in [new_rect.topleft, new_rect.topright, new_rect.bottomleft, new_rect.bottomright]):
         player.move()
     player.animate()
     
+
     display_area_rect.center = player.position
     display_area_rect.left = max(display_area_rect.left, 0)
     display_area_rect.top = max(display_area_rect.top, 0)
@@ -181,10 +223,10 @@ while not finished:
     buffer_suface.blit(game_map.surface, (0,0))
     player.draw(buffer_suface)
     
-    # pygame.draw.rect(buffer_suface, (0,0,255), display_area_rect, 1)
     display_area_suface.blit(buffer_suface, (0,0), display_area_rect)
     pygame.transform.scale(display_area_suface, actual_window_size, window_surface)
     pygame.display.update()
+
     clock.tick(60)
 
 pygame.quit()
