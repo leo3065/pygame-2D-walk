@@ -39,7 +39,7 @@ class Character(object):
     def move(self):
         self.position += Vector2(self.speed)
     
-    def animate(self):
+    def animate(self, **kwargs):
         if self.state == 'idle' and self.speed.length() > 0:
             self.state = 'flying'
             self.animation_queue = [
@@ -48,7 +48,7 @@ class Character(object):
                 [3, {'set_sprite': 'flying', 'set_position_offset': (0,0,0)}],
             ]
             self.frame_until_next_event = 0
-        elif self.state == 'flying' and self.speed.length() == 0:
+        elif self.state == 'flying' and self.speed.length() == 0 and kwargs['current_tile_type']!='water':
             self.state = 'idle'
             self.animation_queue = [
                 [3, {'set_sprite': 'pmove_1', 'set_position_offset': (0,0,0)}],
