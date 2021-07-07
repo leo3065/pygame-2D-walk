@@ -104,7 +104,10 @@ player_sprite_sheet_loader = Sprite_sheet_loader(
     path=sprite_path,
     sprite_origin=(41,1), sprite_size=(41,35), sprite_unit=(42,36),
     type_offsets={
-        'move': (0,3),
+        'stand': (0,0),
+        'pmove_0': (0,1),
+        'pmove_1': (0,2),
+        'flying': (0,3),
     },
     facing_offsets={
         Facing.DOWN: (0,0),
@@ -131,7 +134,8 @@ while True:
 spawn_pos = game_map.tile_coord_to_pixel_coord(spawn_pos, tile_offset=(0.5,0.5))
 player.position = Vector2(spawn_pos)
 
-map_size_pixel = game_map.tile_coord_to_pixel_coord(map_size)
+
+map_size_pixel = tuple(int(p) for p in game_map.tile_coord_to_pixel_coord(map_size))
 display_area_size = (360,270)
 scale_ratio = 2
 display_area_rect = pygame.Rect((0,0), display_area_size)
@@ -157,14 +161,16 @@ while not finished:
     key_is_pressed = pygame.key.get_pressed()
     player.speed.x = (key_is_pressed[pygame.K_RIGHT]-key_is_pressed[pygame.K_LEFT])
     player.speed.y = (key_is_pressed[pygame.K_DOWN]-key_is_pressed[pygame.K_UP])
+
     if player.speed.length() > 0:
         player.speed.scale_to_length(2)
         player.facing = Facing.from_vector(player.speed)
-
     new_pos, new_rect = player.try_move()
+
     if all(game_map.get_tile_name_at(c, use_pixels=True) != 'wall'
            for c in [new_rect.topleft, new_rect.topright, new_rect.bottomleft, new_rect.bottomright]):
         player.move()
+    player.animate()
     
     display_area_rect.center = player.position
     display_area_rect.left = max(display_area_rect.left, 0)
@@ -172,10 +178,10 @@ while not finished:
     display_area_rect.right = min(display_area_rect.right, map_size_pixel[0])
     display_area_rect.bottom = min(display_area_rect.bottom, map_size_pixel[1])
 
-
     buffer_suface.blit(game_map.surface, (0,0))
     player.draw(buffer_suface)
     
+    # pygame.draw.rect(buffer_suface, (0,0,255), display_area_rect, 1)
     display_area_suface.blit(buffer_suface, (0,0), display_area_rect)
     pygame.transform.scale(display_area_suface, actual_window_size, window_surface)
     pygame.display.update()
