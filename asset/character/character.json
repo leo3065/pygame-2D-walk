@@ -1,0 +1,25 @@
+{
+    "Skarmory": {
+        "sprite_data":{
+            "path": "asset/character/skarmory.png",
+            "sprite_origin": [41,1],
+            "sprite_size": [41,35],
+            "sprite_unit": [42,36],
+            "type_offsets": {
+                "stand": [0,0],
+                "pmove_0": [0,1],
+                "pmove_1": [0,2],
+                "flying": [0,3]
+            },
+            "facing_offsets": {
+                "DOWN": [0,0],
+                "DOWN_LEFT": [1,0],
+                "LEFT": [2,0],
+                "UP_LEFT": [3,0],
+                "UP": [4,0]
+            },
+            "transpert_key": [0,128,128]
+        },
+        "sprite_origin": [20,30]
+    }
+}

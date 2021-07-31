@@ -59,6 +59,10 @@ class Sprite_sheet_loader(object):
         else:
             self.type_offsets = {sprite_type: Vector2(offs) for sprite_type, offs in type_offsets.items()}
 
+        for k in list(facing_offsets):
+            if isinstance(k, str):
+                facing_offsets[Facing[k]] = facing_offsets[k]
+                del facing_offsets[k]
         if not use_pixels_for_facing_offsets:
             self.facing_offsets = {face: Vector2(offs).elementwise()*self.sprite_unit
                                    for face, offs in facing_offsets.items()}

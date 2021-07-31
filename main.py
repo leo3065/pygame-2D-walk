@@ -1,6 +1,7 @@
 import sys
 import random
 import enum
+import json
 
 missing_module = []
 try:
@@ -126,37 +127,25 @@ tile_name_table = {
 map_tile_id = map_gen.base_map_gen_hill(map_size)
 game_map = Game_map(map_tile_id, tile_name_table, tile_loader)
 
+charater_data_json_path = 'asset/character/character.json'
+with open(charater_data_json_path) as charater_data_json_fd:
+    charater_data = json.load(charater_data_json_fd)
 
-sprite_path = 'asset/character/skarmory.png'
 player_sprite_sheet_loader = Sprite_sheet_loader(
-    path=sprite_path,
-    sprite_origin=(41,1), sprite_size=(41,35), sprite_unit=(42,36),
-    type_offsets={
-        'stand': (0,0),
-        'pmove_0': (0,1),
-        'pmove_1': (0,2),
-        'flying': (0,3),
-    },
-    facing_offsets={
-        Facing.DOWN: (0,0),
-        Facing.DOWN_LEFT: (1,0),
-        Facing.LEFT: (2,0),
-        Facing.UP_LEFT: (3,0),
-        Facing.UP: (4,0),
-    },
-    transpert_key=(0,128,128),
+    **charater_data['Skarmory']['sprite_data']
     )
 
 player = Character(
     rect_collision_base=pygame.Rect((-10,-5),(20,10)),
     sprite_loader=player_sprite_sheet_loader,
-    sprite_origin=(20,30),
+    sprite_origin=charater_data['Skarmory']['sprite_origin'],
     )
+
 player.position = Vector2(0)
 while True:
     spawn_pos = (random.randint(0, map_size[0]-1), random.randint(0, map_size[1]-1))
     new_pos, new_rect = player.try_move(game_map.tile_coord_to_pixel_coord(spawn_pos))
-    if all(game_map.get_tile_name_at(c, use_pixels=True) != 'wall'
+    if all(game_map.get_tile_name_at(c, use_pixels=True) == 'ground'
            for c in [new_rect.topleft, new_rect.topright, new_rect.bottomleft, new_rect.bottomright]):
         break
 spawn_pos = game_map.tile_coord_to_pixel_coord(spawn_pos, tile_offset=(0.5,0.5))
@@ -194,7 +183,7 @@ while not finished:
                 while True:
                     spawn_pos = (random.randint(0, map_size[0]-1), random.randint(0, map_size[1]-1))
                     new_pos, new_rect = player.try_move(game_map.tile_coord_to_pixel_coord(spawn_pos))
-                    if all(game_map.get_tile_name_at(c, use_pixels=True) != 'wall'
+                    if all(game_map.get_tile_name_at(c, use_pixels=True) == 'ground'
                         for c in [new_rect.topleft, new_rect.topright, new_rect.bottomleft, new_rect.bottomright]):
                         break
                 spawn_pos = game_map.tile_coord_to_pixel_coord(spawn_pos, tile_offset=(0.5,0.5))

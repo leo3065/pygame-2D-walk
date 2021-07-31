@@ -43,6 +43,8 @@ class Character(object):
         if self.state == 'idle' and self.speed.length() > 0:
             self.state = 'flying'
             self.animation_queue = [
+                [3, {'set_sprite': 'pmove_0', 'set_position_offset': (0,0,1)}],
+                [3, {'set_sprite': 'pmove_1', 'set_position_offset': (0,0,1)}],
                 [3, {'set_sprite': 'pmove_0', 'set_position_offset': (0,0,0)}],
                 [3, {'set_sprite': 'pmove_1', 'set_position_offset': (0,0,0)}],
                 [3, {'set_sprite': 'flying', 'set_position_offset': (0,0,0)}],
@@ -51,6 +53,8 @@ class Character(object):
         elif self.state == 'flying' and self.speed.length() == 0 and kwargs['current_tile_type']!='water':
             self.state = 'idle'
             self.animation_queue = [
+                [3, {'set_sprite': 'pmove_1', 'set_position_offset': (0,0,1)}],
+                [3, {'set_sprite': 'pmove_0', 'set_position_offset': (0,0,1)}],
                 [3, {'set_sprite': 'pmove_1', 'set_position_offset': (0,0,0)}],
                 [3, {'set_sprite': 'pmove_0', 'set_position_offset': (0,0,0)}],
                 [3, {'set_sprite': 'stand', 'set_position_offset': (0,0,0)}],
