@@ -4,6 +4,9 @@ import numpy as np
 import tile
 import img_util
 
+from typing import *
+
+
 class Game_map(object):
     def __init__(self, tile_id_np, tile_name_table,
                  tile_loader):

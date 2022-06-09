@@ -3,32 +3,6 @@ import random
 import enum
 import json
 
-missing_module = []
-try:
-    import pygame
-except ModuleNotFoundError:
-    missing_module.append('pygame')
-try:
-    import numpy
-except ModuleNotFoundError:
-    missing_module.append('numpy')
-try:
-    import scipy
-except ModuleNotFoundError:
-    missing_module.append('scipy')
-try:
-    import PIL
-except ModuleNotFoundError:
-    missing_module.append('Pillow')
-if missing_module:
-    print('The following module is required')
-    print(f'- {", ".join(missing_module)}')
-    print('Please run the following in command prompt to install:')
-    print(f'pip install -U {" ".join(missing_module)}')
-    input('Press Enter to continue...')
-    sys.exit()
-
-
 import pygame
 from  pygame.math import Vector2
 import numpy as np
@@ -40,7 +14,8 @@ from character import Facing, Character
 from sprite import Sprite_sheet_loader
 import img_util
 
-map_size = (48,24)
+
+map_size = (60,40)
 tile_path = 'asset/tile/mt_steel_1-5.png'
 
 tile_loader = tile.Tile_sheet_loader(
@@ -124,7 +99,7 @@ tile_name_table = {
     100: 'water_sparkle',
 }
 
-map_tile_id = map_gen.base_map_gen_hill(map_size)
+map_tile_id = map_gen.base_map_gen_fractal(map_size)
 game_map = Game_map(map_tile_id, tile_name_table, tile_loader)
 
 charater_data_json_path = 'asset/character/character.json'
@@ -153,8 +128,8 @@ player.position = Vector2(spawn_pos)
 
 
 map_size_pixel = tuple(int(p) for p in game_map.tile_coord_to_pixel_coord(map_size))
-display_area_size = (360,270)
-scale_ratio = 2
+display_area_size = (640,480)
+scale_ratio = 1
 display_area_rect = pygame.Rect((0,0), display_area_size)
 
 actual_window_size = (display_area_size[0]*scale_ratio, display_area_size[1]*scale_ratio)
@@ -176,7 +151,7 @@ while not finished:
             break
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
-                map_tile_id = map_gen.base_map_gen_hill(map_size)
+                map_tile_id = map_gen.base_map_gen_fractal(map_size)
                 game_map = Game_map(map_tile_id, tile_name_table, tile_loader)
                 
                 player.position = Vector2(0)
@@ -195,7 +170,7 @@ while not finished:
     player.speed.y = (key_is_pressed[pygame.K_DOWN]-key_is_pressed[pygame.K_UP])
 
     if player.speed.length() > 0:
-        player.speed.scale_to_length(2)
+        player.speed.scale_to_length(3)
         player.facing = Facing.from_vector(player.speed)
     
     new_pos, new_rect = player.try_move()
