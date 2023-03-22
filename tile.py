@@ -36,11 +36,11 @@ class Tile_connectivity(enum.IntFlag):
             [0x08, 0x00, 0x02],
             [0x40, 0x04, 0x20],
         ])
-        return Tile_connectivity(int(np.sum(neighbor_array*bitmasks)))
+        return Tile_connectivity(int(np.sum(neighbor_array * bitmasks)))
     
     @staticmethod
-    def from_dpad(dpad):
-        """Creates from D-pad list.
+    def from_numpad(dpad):
+        """Creates from numpad list.
         
         The D-pad numbering is as following:
             7 8 9

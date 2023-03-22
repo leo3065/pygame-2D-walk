@@ -6,7 +6,7 @@ from einops import *
 from typing import *
 
 
-def quantize(arr: np.ndarray, unit: float = 1):
+def quantize(arr: np.ndarray, unit: float = 1) -> np.ndarray:
     """
     Quantiles the values in arr with unit as the step.
     
@@ -20,7 +20,7 @@ def quantize(arr: np.ndarray, unit: float = 1):
     return np.round(arr/unit)*unit
 
 
-def normalize(arr: np.ndarray, vrange: Tuple[float, float] = (0,1)):
+def normalize(arr: np.ndarray, vrange: Tuple[float, float] = (0,1)) -> np.ndarray:
     """
     Normalizes the values in arr with unit in the specified range.
     
@@ -35,7 +35,7 @@ def normalize(arr: np.ndarray, vrange: Tuple[float, float] = (0,1)):
     return (arr-np.min(arr))/(np.max(arr)-np.min(arr))*(vmax-vmin)+vmin
 
 
-def vec_hash(vec: np.ndarray, seed: float = 0):
+def vec_hash(vec: np.ndarray, seed: float = 0) -> float:
     """
     Generates a seeded "hash" for any dimension of coordinates.
     
@@ -50,7 +50,7 @@ def vec_hash(vec: np.ndarray, seed: float = 0):
     return ((vec@scale_vec)**2 * (384567 + seed)) % 1
 
 
-def perlin_noise_2d(coords: np.ndarray, scale: float = 1, seed: float = 0):
+def perlin_noise_2d(coords: np.ndarray, scale: float = 1, seed: float = 0) -> np.ndarray:
     """
     Generates a seeded 2D Perlin noise at the coordinates.
     
@@ -90,7 +90,7 @@ def perlin_noise_2d(coords: np.ndarray, scale: float = 1, seed: float = 0):
 
 
 def fractal_noise_2d(coords: np.ndarray,
-    scale: float = 1, depth: int = 3, detail: float = .5, seed: float = 0):
+    scale: float = 1, depth: int = 3, detail: float = .5, seed: float = 0) -> np.ndarray:
     """
     Generates a seeded 2D fractal noise at the coordinates by stacking 2D Perlin noises.
     

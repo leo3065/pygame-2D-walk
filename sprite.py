@@ -20,7 +20,10 @@ class Facing(enum.IntEnum):
     DOWN_RIGHT = 7
 
     def mirror_x(self):
-        return Facing((8-self)%8)
+        if self == Facing.NONE:
+            return Facing.NONE
+        else:
+            return Facing((8-self)%8)
     
     @staticmethod
     def from_vector(vec: Vector2):
